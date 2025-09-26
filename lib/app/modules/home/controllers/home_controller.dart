@@ -1,12 +1,13 @@
-import 'dart:io';
-import 'dart:convert'; // ⬅️ penting buat decode JSON
+import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 class HomeController extends GetxController {
-  var plate = "".obs;
+  var plate = RxnString();
+  var kendaraan = Rxn<Map<String, dynamic>>();
   var isLoading = false.obs;
+  var isError = false.obs;
 
   final picker = ImagePicker();
 
@@ -16,24 +17,38 @@ class HomeController extends GetxController {
 
     isLoading.value = true;
     try {
-      var uri = Uri.parse("http://192.168.0.24:5000/detect");
+      const baseUrl = "http://127.0.0.1";
+      var uri = Uri.parse("$baseUrl/detect");
       var request = http.MultipartRequest("POST", uri);
       request.files.add(
         await http.MultipartFile.fromPath("file", pickedFile.path),
       );
 
       var response = await request.send();
-      if (response.statusCode == 200) {
-        var body = await response.stream.bytesToString();
+      var res = await http.Response.fromStream(response);
 
-        final data = jsonDecode(body);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
 
-        plate.value = data["plate"] ?? "Tidak ada hasil";
+        if (data["plate"] != null &&
+            data["plate"].toString().trim().isNotEmpty) {
+          plate.value = data["plate"];
+          kendaraan.value = data["match"];
+          isError.value = false;
+        } else {
+          plate.value = "Tidak ada plat";
+          kendaraan.value = null;
+          isError.value = true;
+        }
       } else {
-        plate.value = "Error: ${response.statusCode}";
+        plate.value = "Error: ${res.statusCode}";
+        kendaraan.value = null;
+        isError.value = true;
       }
     } catch (e) {
       plate.value = "Error: $e";
+      kendaraan.value = null;
+      isError.value = true;
     } finally {
       isLoading.value = false;
     }

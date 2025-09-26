@@ -12,7 +12,6 @@ class HomeView extends GetView<HomeController> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Custom App Bar
             SliverAppBar(
               expandedHeight: 120,
               floating: false,
@@ -25,10 +24,7 @@ class HomeView extends GetView<HomeController> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF667EEA),
-                        Color(0xFF764BA2),
-                      ],
+                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                     ),
                   ),
                   child: const Center(
@@ -51,10 +47,7 @@ class HomeView extends GetView<HomeController> {
                         ),
                         Text(
                           "Teknologi AI untuk identifikasi kendaraan",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                       ],
                     ),
@@ -62,35 +55,30 @@ class HomeView extends GetView<HomeController> {
                 ),
               ),
             ),
-            
-            // Main Content
-            SliverToBoxAdapter(
-              child: Obx(() {
-                if (controller.isLoading.value) {
-                  return _buildLoadingView();
-                }
 
-                return Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-     
-                      _buildUploadSection(),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // Result Section
-                      _buildResultSection(),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Features Info
-                      _buildFeaturesInfo(),
-                    ],
-                  ),
-                );
-              }),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildUploadSection(),
+
+                    const SizedBox(height: 32),
+
+                    Obx(() {
+                      if (controller.isLoading.value) {
+                        return _buildLoadingView();
+                      }
+                      return _buildResultSection();
+                    }),
+
+                    const SizedBox(height: 24),
+
+                    _buildFeaturesInfo(),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -121,17 +109,13 @@ class HomeView extends GetView<HomeController> {
             SizedBox(height: 8),
             Text(
               "Mohon tunggu sebentar",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
           ],
         ),
       ),
     );
   }
-
 
   Widget _buildUploadSection() {
     return Container(
@@ -212,8 +196,10 @@ class HomeView extends GetView<HomeController> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: controller.plate.value.isEmpty 
+          color: controller.plate.value == null
               ? Colors.grey.withOpacity(0.2)
+              : controller.isError.value
+              ? Colors.red.withOpacity(0.3)
               : const Color(0xFF10B981).withOpacity(0.3),
         ),
         boxShadow: [
@@ -231,17 +217,23 @@ class HomeView extends GetView<HomeController> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: controller.plate.value.isEmpty 
+                  color: controller.plate.value == null
                       ? const Color(0xFFF3F4F6)
+                      : controller.isError.value
+                      ? const Color(0xFFFEE2E2)
                       : const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  controller.plate.value.isEmpty 
+                  controller.plate.value == null
                       ? Icons.search_off
+                      : controller.isError.value
+                      ? Icons.error_outline
                       : Icons.check_circle_outline,
-                  color: controller.plate.value.isEmpty 
+                  color: controller.plate.value == null
                       ? Colors.grey[600]
+                      : controller.isError.value
+                      ? Colors.red
                       : const Color(0xFF10B981),
                   size: 24,
                 ),
@@ -258,104 +250,184 @@ class HomeView extends GetView<HomeController> {
             ],
           ),
           const SizedBox(height: 20),
-          
-          if (controller.plate.value.isEmpty) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.grey.withOpacity(0.2),
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.image_search,
-                    size: 48,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    "Belum ada hasil deteksi",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Upload gambar untuk mulai deteksi",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+
+          if (controller.plate.value == null) ...[
+            _buildEmptyState(),
+          ] else if (controller.isError.value) ...[
+            _buildErrorState(controller.plate.value!),
           ] else ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
+            _buildSuccessState(controller.plate.value!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.image_search, size: 48, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          Text(
+            "Belum ada hasil deteksi",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "Upload gambar untuk mulai deteksi",
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String msg) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error, size: 48, color: Colors.red),
+          const SizedBox(height: 12),
+          const Text(
+            "Plat Nomor Tidak Ditemukan",
+            style: TextStyle(fontSize: 14, color: Colors.black54),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            msg,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+              letterSpacing: 2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessState(String plate) {
+    final kendaraan =
+        controller.kendaraan.value; // <- ambil data kendaraan dari controller
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFECFDF5), Color(0xFFF0FDF4)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Center(
+            child: Icon(Icons.verified, size: 48, color: Color(0xFF10B981)),
+          ),
+          const SizedBox(height: 12),
+          const Center(
+            child: Text(
+              "Plat Nomor Terdeteksi:",
+              style: TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFECFDF5),
-                    Color(0xFFF0FDF4),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: const Color(0xFF10B981).withOpacity(0.2),
+                  color: const Color(0xFF10B981).withOpacity(0.3),
                 ),
               ),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.verified,
-                    size: 48,
-                    color: Color(0xFF10B981),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Plat Nomor Terdeteksi:",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFF10B981).withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      controller.plate.value,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF065F46),
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                plate,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF065F46),
+                  letterSpacing: 2,
+                ),
               ),
             ),
+          ),
+          const SizedBox(height: 20),
+
+          // Detail kendaraan kalau ada di database
+          if (kendaraan != null) ...[
+            const Divider(height: 32),
+            const Text(
+              "Data Kendaraan:",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildDetailItem("Nama Pemilik", kendaraan["nama_pemilik"]),
+            _buildDetailItem("No Mesin", kendaraan["no_mesin"]),
+            _buildDetailItem("No Rangka", kendaraan["no_rangka"]),
+            _buildDetailItem("No Plat", kendaraan["no_plat"]),
+            _buildDetailItem("Jenis Kendaraan", kendaraan["jenis_kendaraan"]),
+            _buildDetailItem("Status", kendaraan["status"]),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String title, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value ?? "-",
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -367,9 +439,7 @@ class HomeView extends GetView<HomeController> {
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,11 +484,7 @@ class HomeView extends GetView<HomeController> {
               color: const Color(0xFF667EEA).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              size: 16,
-              color: const Color(0xFF667EEA),
-            ),
+            child: Icon(icon, size: 16, color: const Color(0xFF667EEA)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -435,10 +501,7 @@ class HomeView extends GetView<HomeController> {
                 ),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
