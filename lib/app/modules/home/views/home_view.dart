@@ -308,7 +308,7 @@ class HomeView extends GetView<HomeController> {
           const Icon(Icons.error, size: 48, color: Colors.red),
           const SizedBox(height: 12),
           const Text(
-            "Plat Nomor Tidak Ditemukan",
+            "Plat Tidak Terdaftar",
             style: TextStyle(fontSize: 14, color: Colors.black54),
           ),
           const SizedBox(height: 8),
@@ -327,8 +327,7 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildSuccessState(String plate) {
-    final kendaraan =
-        controller.kendaraan.value; // <- ambil data kendaraan dari controller
+    final kendaraan = controller.kendaraan.value;
 
     return Container(
       width: double.infinity,
@@ -377,7 +376,6 @@ class HomeView extends GetView<HomeController> {
           ),
           const SizedBox(height: 20),
 
-          // Detail kendaraan kalau ada di database
           if (kendaraan != null) ...[
             const Divider(height: 32),
             const Text(
@@ -402,6 +400,9 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildDetailItem(String title, String? value) {
+    final isStatus = title == "Status";
+    final isNotRegistered = value == "Kendaraan Tidak Terdaftar";
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -421,10 +422,12 @@ class HomeView extends GetView<HomeController> {
             flex: 3,
             child: Text(
               value ?? "-",
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Colors.black87,
                 fontWeight: FontWeight.w600,
+                color: isStatus && isNotRegistered
+                    ? Colors.red
+                    : Colors.black87,
               ),
             ),
           ),

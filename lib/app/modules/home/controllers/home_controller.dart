@@ -12,7 +12,7 @@ class HomeController extends GetxController {
   final picker = ImagePicker();
 
   Future<void> pickAndUpload() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile == null) return;
 
     isLoading.value = true;
@@ -33,8 +33,23 @@ class HomeController extends GetxController {
         if (data["plate"] != null &&
             data["plate"].toString().trim().isNotEmpty) {
           plate.value = data["plate"];
-          kendaraan.value = data["match"];
-          isError.value = false;
+
+          final match = data["match"];
+
+          if (match is Map && match.containsKey("nama_pemilik")) {
+            kendaraan.value = Map<String, dynamic>.from(match);
+            isError.value = false;
+          } else {
+            kendaraan.value = {
+              "nama_pemilik": null,
+              "no_mesin": null,
+              "no_rangka": null,
+              "no_plat": null,
+              "jenis_kendaraan": null,
+              "status": "Kendaraan Tidak Terdaftar",
+            };
+            isError.value = true;
+          }
         } else {
           plate.value = "Tidak ada plat";
           kendaraan.value = null;
